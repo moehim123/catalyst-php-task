@@ -17,7 +17,7 @@ function createTable($conn) {
         echo "Error creating users table:" . $conn->error ."\n"; 
         exit(1); 
 
-    }
+    } 
 } 
 
 
@@ -38,25 +38,58 @@ function commandlineinstruct(){
     
 } 
 
-$options = getopt("u:p:h",["--file","--create-table","--dry-run","help"]);  
+function connectToDatabase(){ 
 
-//if its the help option the commanndlineinstruct function will be executed 
-if (isset($options['help'])){
-    commandlineinstruct();
-} 
+    $servename =$option['h'] ?? "localhost"; 
+    $username =$option['u'] ?? "username"; 
+    $password = $option['p'] ?? "password"; 
+    $dbname = "database-name";  
 
+    $conn = new mysqli($servename,$username, $password, $dbname); 
 
+    if ($conn -> connect_error){
+        die("connection failed" . $conn->connect_error . "\n"); 
 
-//reads the CSV file if the command is file  
-$csv = $options["--file"];
-$csv_file = array_map('str_getcsv', file($csv)); 
+    }
 
-
-$Dryrun = isset($options["--dry-run"]); 
-//If it is not dry run we create users table 
-if (!Dryrun){
     createTable($conn); 
+
+    $conn->close(); 
+
+    exit(0); 
+
 } 
+
+function main(){ 
+
+    $options = getopt("u:p:h",["--file","--create-table","--dry-run","--help"]);  
+
+    //if its the help option the commanndlineinstruct function will be executed 
+    if (isset($options['--help'])){
+        commandlineinstruct();
+        return; 
+    } 
+
+    // create table 
+    if (isset($options['--create-table'])){
+        connectToDatabase(); 
+        return; 
+    } 
+        
+    //reads the CSV file if the command is file  
+    $csv = $options["--file"];
+    $csv_file = array_map('str_getcsv', file($csv)); 
+
+
+    $Dryrun = isset($options["--dry-run"]); 
+    //If it is not dry run we create users table 
+    if (!Dryrun){
+        createTable($conn); 
+    } 
+
+} 
+
+
 
 foreach($csv_file as $row){
     //To capitalise first letter of name 
@@ -79,4 +112,7 @@ foreach($csv_file as $row){
     else{ 
         echo "the email address is invalid";  
     } 
-}
+} 
+
+
+?> 
