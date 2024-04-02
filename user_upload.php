@@ -1,10 +1,23 @@
 <?php
 
-//testing phpt
-$arg1 = $argv[1];
-$arg2 = $argv[2];
+// Function to create MYSQL users table 
+function createTable($conn) {
+    $table = " CREATE TABLE IF NOT EXISTS users(
+        id INT AUTO_INCREMENT PRIMARY KEY, 
+        name VARCHAR(255) NOT NULL, 
+        surname VARCHAR(255) NOT NULL, 
+        email VARCHAR(255) NOT NULL UNIQUE
+        )"; 
+    //users table created 
+    if ($conn->query($table) === TRUE){
+        echo "Users table created/rebuilt"; 
+    } 
+    //users table not created due to connection problems 
+    else{
+        echo "Error creating users table:" . $conn->error ."\n"; 
+        exit(1); 
+
+    }
+} 
 
 
-echo "Argument 1: $arg1\n";
-echo "Argument 2: $arg2\n";
-?> 
