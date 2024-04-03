@@ -1,7 +1,7 @@
 <?php
 
 // Function to create MYSQL users table 
-function createTable($conn) {
+function createTable($conn) { 
     $table = " CREATE TABLE IF NOT EXISTS users(
         id INT AUTO_INCREMENT PRIMARY KEY, 
         name VARCHAR(255) NOT NULL, 
@@ -9,15 +9,15 @@ function createTable($conn) {
         email VARCHAR(255) NOT NULL UNIQUE
         )"; 
     //users table created 
-    if ($conn->query($table) === TRUE){
-        echo "Users table created/rebuilt"; 
-    } 
+    if ($conn->query($table) === TRUE){ 
+        echo "Users table created/rebuilt\n"; 
+    }  
     //users table not created due to connection problems 
-    else{
+    else{ 
         echo "Error creating users table:" . $conn->error ."\n"; 
-        exit(1); 
+        exit(1);  
 
-    } 
+    }  
 } 
 
 
@@ -46,12 +46,12 @@ function main(){
     $options = getopt("u:p:h",["file","create-table","dry-run","help"]);  
 
     //if its the help option the commanndlineinstruct function will be executed 
-    echo json_encode(isset($options['help'])); 
     if (isset($options['help'])){
         commandlineinstruct();
         return; 
     } 
 
+    //Connecting to the database 
     $servename =$options['h'] ?? "localhost"; 
     $username =$options['u'] ?? "username"; 
     $password = $options['p'] ?? "password"; 
@@ -67,48 +67,74 @@ function main(){
 
    
     // create table 
-    if (isset($options['create-table'])){
-        createTable(); 
+    if (isset($options['create-table'])){ 
+        createTable($conn); 
         $conn->close(); 
         return; 
     } 
         
     //reads the CSV file if the command is file  
-    $csv = $options["file"];
-    $csv_file = array_map('str_getcsv', file($csv)); 
+    $csv = $options['file'] ?? "users.csv"; 
+    $csv_file = fopen($csv , "r"); 
 
 
-    $Dryrun = isset($options["dry-run"]); 
+    $dryRun = isset($options["dry-run"]); 
 
-    InsertToDatabase($csv_file, $conn, $Dryrun); 
+    
+  
+    insertToDatabase($csv_file, $conn, $dryRun); 
+    fclose($csv_file); 
+
 
 } 
 
-function InsertToDatabase($csv_file, $conn,$Dryrun){  
+function insertToDatabase($csv_file, $conn,$dryRun){  
     
 
-    foreach($csv_file as $row){
-        //To capitalise first letter of name 
+    while (($row = fgetcsv($csv_file, 1000, ",")) !== FALSE) {       
         $name = ucfirst(strtolower($row[0])); 
         //To capitalise first letter of surname 
         $surname = ucfirst(strtolower($row[1])); 
         //Change email to lowercase 
         $email = strtolower($row[2]); 
+        $name = $conn->real_escape_string($name);
+        $surname = $conn->real_escape_string($surname);
+        $email = $conn->real_escape_string($email);
+      
         
         //Validating Email 
-        if(validateEmai[$email]){
-            if(!Dryrun){
-                $InsertToSql = "INSERT INTO users(name, surname, email) VALUES ($name, $surname, $email)";
-                if($conn->query($InsertToSql) !== TRUE) {
-                    echo "Error inserting " . $conn->error . "\n";  
+        if(validateEmail($email)){ 
+            if(!$dryRun){ 
+                //this part is to check for any duplicates before inserting to database 
+                $checkDuplicateSql = "SELECT COUNT(*) AS count FROM users WHERE email = '$email'";
+                $result = $conn->query($checkDuplicateSql);
+                if ($result) {
+                    $row = $result->fetch_assoc();
+                    if ($row['count'] > 0) {
+                        echo "User with email '$email' already exists.\n";
+                    }
+                    else{
+                        //if the record is not duplicated insert it here 
+                        $insertToSql = "INSERT INTO users(name, surname, email) VALUES ('$name', '$surname', '$email')";
+                        if($conn->query($insertToSql) !== TRUE) {
+        
+                            echo "Error inserting " . $conn->error . "\n";  
+                        }   
+                        else{
+                             echo "Record inserted\n";  
+                        }
+                    }
                 }
+               
+                
             } 
-            echo "Record inserted";  
+            
         }
         else{ 
-            echo "the email address is invalid";  
+            echo "the email address is invalid" . $email . "\n";  
         } 
     } 
 } 
 main(); 
 ?> 
+
