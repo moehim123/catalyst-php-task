@@ -22,7 +22,7 @@ function createTable($conn) {
 
 
 //Function for validating email 
-function validateEmail($email){
+function validateEmail($email){ 
     return filter_var($email,FILTER_VALIDATE_EMAIL); 
 } 
 
@@ -52,9 +52,9 @@ function main(){
         return; 
     } 
 
-    $servename =$option['h'] ?? "localhost"; 
-    $username =$option['u'] ?? "username"; 
-    $password = $option['p'] ?? "password"; 
+    $servename =$options['h'] ?? "localhost"; 
+    $username =$options['u'] ?? "username"; 
+    $password = $options['p'] ?? "password"; 
     $dbname = "catalyst_database";  
 
     $conn = new mysqli($servename,$username, $password, $dbname); 
@@ -65,10 +65,10 @@ function main(){
     }
     
 
-    connectToDatabase(); 
+   
     // create table 
-    if (isset($options['reate-table'])){
-        connectToDatabase(); 
+    if (isset($options['create-table'])){
+        createTable(); 
         $conn->close(); 
         return; 
     } 
