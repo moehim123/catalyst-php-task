@@ -28,22 +28,34 @@ function validateEmail($email){
 
 //function to print the command line instructions  
 function commandlineinstruct(){
-    echo "--file [csv file name]      – this is the name of the CSV to be parsed"; 
-    echo "--create_table             – this will cause the MySQL users table to be built (and no further action will be taken)"; 
+    echo "--file [csv file name]      – this is the name of the CSV to be parsed \n"; 
+    echo "--create_table             – this will cause the MySQL users table to be built (and no further action will be taken) \n"; 
     echo "--dry_run                 – this will be used with the --file directive in case we want to run the script but not insert
-                                     into the DB. All other functions will be executed, but the database won't be altered";   
-    echo "-u                       – MySQL username"; 
-    echo "-p                       – MySQL password"; 
-    echo "-h                       – MySQL host"; 
+                                     into the DB. All other functions will be executed, but the database won't be altered \n";   
+    echo "-u                       – MySQL username \n"; 
+    echo "-p                       – MySQL password \n"; 
+    echo "-h                       – MySQL host \n"; 
     
 } 
 
-function connectToDatabase(){ 
+
+
+
+function main(){ 
+    
+    $options = getopt("u:p:h",["file","create-table","dry-run","help"]);  
+
+    //if its the help option the commanndlineinstruct function will be executed 
+    echo json_encode(isset($options['help'])); 
+    if (isset($options['help'])){
+        commandlineinstruct();
+        return; 
+    } 
 
     $servename =$option['h'] ?? "localhost"; 
     $username =$option['u'] ?? "username"; 
     $password = $option['p'] ?? "password"; 
-    $dbname = "database-name";  
+    $dbname = "catalyst_database";  
 
     $conn = new mysqli($servename,$username, $password, $dbname); 
 
@@ -51,68 +63,52 @@ function connectToDatabase(){
         die("connection failed" . $conn->connect_error . "\n"); 
 
     }
+    
 
-    createTable($conn); 
-
-    $conn->close(); 
-
-    exit(0); 
-
-} 
-
-function main(){ 
-
-    $options = getopt("u:p:h",["--file","--create-table","--dry-run","--help"]);  
-
-    //if its the help option the commanndlineinstruct function will be executed 
-    if (isset($options['--help'])){
-        commandlineinstruct();
-        return; 
-    } 
-
+    connectToDatabase(); 
     // create table 
-    if (isset($options['--create-table'])){
+    if (isset($options['reate-table'])){
         connectToDatabase(); 
+        $conn->close(); 
         return; 
     } 
         
     //reads the CSV file if the command is file  
-    $csv = $options["--file"];
+    $csv = $options["file"];
     $csv_file = array_map('str_getcsv', file($csv)); 
 
 
-    $Dryrun = isset($options["--dry-run"]); 
-    //If it is not dry run we create users table 
-    if (!Dryrun){
-        createTable($conn); 
-    } 
+    $Dryrun = isset($options["dry-run"]); 
+
+    InsertToDatabase($csv_file, $conn, $Dryrun); 
 
 } 
 
-
-
-foreach($csv_file as $row){
-    //To capitalise first letter of name 
-    $name = ucfirst(strtolower($row[0])); 
-    //To capitalise first letter of surname 
-    $surname = ucfirst(strtolower($row[1])); 
-    //Change email to lowercase 
-    $email = strtolower($row[2]); 
+function InsertToDatabase($csv_file, $conn,$Dryrun){  
     
-    //Validating Email 
-    if(validateEmai[$email]){
-        if(!Dryrun){
-            $InsertToSql = "INSERT INTO users(name, surname, email) VALUES ($name, $surname, $email)";
-            if($conn->query($InsertToSql) !== TRUE) {
-                echo "Error inserting " . $conn->error . "\n";  
-            }
+
+    foreach($csv_file as $row){
+        //To capitalise first letter of name 
+        $name = ucfirst(strtolower($row[0])); 
+        //To capitalise first letter of surname 
+        $surname = ucfirst(strtolower($row[1])); 
+        //Change email to lowercase 
+        $email = strtolower($row[2]); 
+        
+        //Validating Email 
+        if(validateEmai[$email]){
+            if(!Dryrun){
+                $InsertToSql = "INSERT INTO users(name, surname, email) VALUES ($name, $surname, $email)";
+                if($conn->query($InsertToSql) !== TRUE) {
+                    echo "Error inserting " . $conn->error . "\n";  
+                }
+            } 
+            echo "Record inserted";  
+        }
+        else{ 
+            echo "the email address is invalid";  
         } 
-        echo "Record inserted";  
-    }
-    else{ 
-        echo "the email address is invalid";  
     } 
 } 
-
-
+main(); 
 ?> 
